@@ -13,7 +13,7 @@ import time
 import webbrowser
 
 # --- Config ---
-V_WIDTH, V_HEIGHT = 800, 500
+V_WIDTH, V_HEIGHT = 1280, 800
 FPS = 120
 SAVE_FILE = "highscore.json"
 
@@ -132,8 +132,8 @@ class Star:
     def update(self):
         self.x -= self.speed
         if self.x < 0:
-            self.x = V_WIDTH
-            self.y = random.randint(0, V_HEIGHT)
+            self.x = pygame.display.get_surface().get_width()
+            self.y = random.randint(0, pygame.display.get_surface().get_height())
     def draw(self, surf):
         pygame.draw.circle(surf, (200, 200, 255), (int(self.x), int(self.y)), self.size)
 
@@ -141,7 +141,9 @@ class Ball:
     def __init__(self):
         self.reset()
     def reset(self):
-        self.x, self.y = V_WIDTH // 2, V_HEIGHT // 2
+        surf = pygame.display.get_surface()
+        w, h = surf.get_size() if surf else (1280, 800)
+        self.x, self.y = w // 2, h // 2
         self.vx, self.vy = 5 * random.choice([-1, 1]), random.uniform(-3, 3)
         self.radius = 12
         self.trail = []
@@ -168,7 +170,7 @@ class Game:
         pygame.init()
         self.audio = AudioEngine()
         self.screen_w, self.screen_h = V_WIDTH, V_HEIGHT
-        self.screen = pygame.display.set_mode((self.screen_w, self.screen_h), pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode((V_WIDTH, V_HEIGHT), pygame.RESIZABLE)
         pygame.display.set_caption("PIXEL PONG")
         self.icon = None
         if os.path.exists("icon.png"):
@@ -179,45 +181,45 @@ class Game:
                 pass
         self.game_surf = pygame.Surface((V_WIDTH, V_HEIGHT))
         self.clock = pygame.time.Clock()
-        self.font = pygame.font.SysFont("orbitron,segoeui,arial", 32, bold=True)
-        self.font_small = pygame.font.SysFont("orbitron,segoeui,arial", 20, bold=True)
-        self.font_big = pygame.font.SysFont("orbitron,segoeui,arial", 110, bold=True)
-        self.font_mid = pygame.font.SysFont("orbitron,segoeui,arial", 64, bold=True)
+        self.font = pygame.font.SysFont("orbitron,segoeui,arial", 44, bold=True)
+        self.font_small = pygame.font.SysFont("orbitron,segoeui,arial", 28, bold=True)
+        self.font_big = pygame.font.SysFont("orbitron,segoeui,arial", 160, bold=True)
+        self.font_mid = pygame.font.SysFont("orbitron,segoeui,arial", 90, bold=True)
         
         self.highscore = load_highscore()
         self.state = "MENU"
         self.game_mode = 0
         self.difficulty = 1
+        self.w, self.h = V_WIDTH, V_HEIGHT
         self.theme = "NEON"
         self.modes = ["SINGLE PLAYER", "LOCAL VERSUS", "CHAOS MODE"]
-        self.diffs = ["NOVICE", "ELITE", "INSANE"]
+        self.diffs = ["EASY", "MEDIUM", "HARD"]
         self.theme_list = list(THEMES.keys())
-        self.draw_rect = pygame.Rect(0, 0, V_WIDTH, V_HEIGHT)
+        self.update_scaling()
         self.stars = [Star() for _ in range(120)]
         self.particles = []
-        self.btns = {
-            "START": pygame.Rect(V_WIDTH//2-160, 260, 320, 70),
-            "SETTINGS": pygame.Rect(V_WIDTH//2-160, 350, 320, 70),
-            "RESTART": pygame.Rect(V_WIDTH//2-160, 380, 320, 70),
-            "GITHUB": pygame.Rect(V_WIDTH - 110, V_HEIGHT - 45, 90, 30),
-            "EXIT": pygame.Rect(20, V_HEIGHT - 45, 90, 30)
-        }
+        self.update_btns()
         self.tick = 0
         self.reset_game()
 
+    def update_btns(self):
+        self.btns = {
+            "START": pygame.Rect(self.w//2-220, 420, 440, 90),
+            "SETTINGS": pygame.Rect(self.w//2-220, 540, 440, 90),
+            "RESTART": pygame.Rect(self.w//2-220, 580, 440, 90),
+            "GITHUB": pygame.Rect(self.w - 160, self.h - 60, 130, 42),
+            "EXIT": pygame.Rect(30, self.h - 60, 130, 42),
+            "RESUME": pygame.Rect(self.w//2-220, self.h//2-100, 440, 90),
+            "QUIT": pygame.Rect(self.w//2-220, self.h//2+20, 440, 90)
+        }
+
     def update_scaling(self):
-        tr = V_WIDTH / V_HEIGHT
-        sr = self.screen_w / self.screen_h
-        if sr > tr:
-            nh = self.screen_h
-            nw = int(nh * tr)
-        else:
-            nw = self.screen_w
-            nh = int(nw / tr)
-        self.draw_rect = pygame.Rect((self.screen_w - nw)//2, (self.screen_h - nh)//2, nw, nh)
+        self.w, self.h = self.screen.get_size()
+        self.game_surf = pygame.Surface((self.w, self.h))
+        self.update_btns()
 
     def reset_game(self):
-        self.p1_y, self.p2_y = V_HEIGHT//2-50, V_HEIGHT//2-50
+        self.p1_y, self.p2_y = self.h//2-75, self.h//2-75
         self.score, self.lives, self.level = 0, 3, 1
         self.balls = [Ball()]
         if self.game_mode == 2:
@@ -227,11 +229,15 @@ class Game:
 
     def load_level(self):
         self.bricks = []
-        cols, rows = 3 + (self.level // 2), 7
+        cols, rows = 3 + (self.level // 2), 9
+        bw, bh, gap = 36, 46, 6
+        total_w = cols * (bw + gap)
         for c in range(cols):
             for r in range(rows):
                 exp = random.random() < 0.1
-                self.bricks.append({"rect": pygame.Rect(V_WIDTH//2-(cols*35)//2+c*35, 90+r*45, 28, 35), "active": True, "exp": exp})
+                bx = self.w//2 - total_w//2 + c * (bw + gap)
+                by = 130 + r * (bh + gap)
+                self.bricks.append({"rect": pygame.Rect(bx, by, bw, bh), "active": True, "exp": exp})
 
     def run(self):
         self.audio.start_music()
@@ -247,23 +253,32 @@ class Game:
 
     def handle_input(self):
         mx, my = pygame.mouse.get_pos()
-        rw, rh = self.draw_rect.width, self.draw_rect.height
-        rel_m = ((mx - self.draw_rect.x) * (V_WIDTH / rw), (my - self.draw_rect.y) * (V_HEIGHT / rh))
+        # With pygame.SCALED, mouse coords are already in virtual space
+        rel_m = (mx, my)
         click = False
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return False
             if event.type == pygame.VIDEORESIZE:
+                # Let pygame.SCALED handle the scaling, just update internal size trackers
                 self.screen_w, self.screen_h = event.size
-                self.screen = pygame.display.set_mode(event.size, pygame.RESIZABLE)
                 self.update_scaling()
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 click = True
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_f:
-                    self.screen = pygame.display.set_mode((0,0), pygame.FULLSCREEN) if self.screen.get_flags() & pygame.FULLSCREEN == 0 else pygame.display.set_mode((V_WIDTH, V_HEIGHT), pygame.RESIZABLE)
-                    self.screen_w, self.screen_h = self.screen.get_size()
-                    self.update_scaling()
+                    flags = self.screen.get_flags()
+                    if flags & pygame.FULLSCREEN:
+                        self.screen = pygame.display.set_mode((V_WIDTH, V_HEIGHT), pygame.SCALED | pygame.RESIZABLE)
+                    else:
+                        self.screen = pygame.display.set_mode((V_WIDTH, V_HEIGHT), pygame.SCALED | pygame.FULLSCREEN)
+                if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
+                    if self.state == "PLAY":
+                        self.state = "PAUSE"
+                        self.audio.play("button")
+                    elif self.state == "PAUSE":
+                        self.state = "PLAY"
+                        self.audio.play("button")
                 if self.state == "MENU":
                     self.state = "PLAY"
                     self.reset_game()
@@ -288,17 +303,24 @@ class Game:
                     self.audio.play("button")
                 elif self.btns["EXIT"].collidepoint(rel_m):
                     return False
-            elif self.state == "SETTINGS":
-                if rel_m[1] > 410:
+            elif self.state == "PAUSE":
+                if self.btns["RESUME"].collidepoint(rel_m):
+                    self.state = "PLAY"
+                    self.audio.play("button")
+                elif self.btns["QUIT"].collidepoint(rel_m):
                     self.state = "MENU"
                     self.audio.play("button")
-                elif 100 < rel_m[1] < 170:
+            elif self.state == "SETTINGS":
+                if rel_m[1] > 660:
+                    self.state = "MENU"
+                    self.audio.play("button")
+                elif 155 < rel_m[1] < 245:
                     self.game_mode = (self.game_mode + 1) % len(self.modes)
                     self.audio.play("button")
-                elif 175 < rel_m[1] < 245:
+                elif 275 < rel_m[1] < 365:
                     self.difficulty = (self.difficulty + 1) % len(self.diffs)
                     self.audio.play("button")
-                elif 250 < rel_m[1] < 320:
+                elif 395 < rel_m[1] < 485:
                     self.theme = self.theme_list[(self.theme_list.index(self.theme) + 1) % len(self.theme_list)]
                     self.audio.play("powerup")
             elif self.state == "OVER":
@@ -325,44 +347,69 @@ class Game:
                 self.particles.remove(p)
         if self.state != "PLAY":
             return
-        dm, ai = [0.8, 1.1, 1.5][self.difficulty], [0.06, 0.1, 0.15][self.difficulty]
+        dm, ai = [0.65, 0.95, 1.3][self.difficulty], [3, 6, 10][self.difficulty]
         keys = pygame.key.get_pressed()
         u = keys[pygame.K_w] or keys[pygame.K_UP] or keys[pygame.K_i]
         d = keys[pygame.K_s] or keys[pygame.K_DOWN] or keys[pygame.K_k]
         if u:
-            self.p1_y -= 8
+            self.p1_y -= 10
         if d:
-            self.p1_y += 8
-        self.p1_y = max(0, min(V_HEIGHT-100, self.p1_y))
+            self.p1_y += 10
+        self.p1_y = max(0, min(self.h-150, self.p1_y))
+
         if self.game_mode == 0:
-            t = self.balls[0].y-50 if self.balls else V_HEIGHT//2
-            self.p2_y += (t - self.p2_y) * ai
+            # AI tracking with reaction delay and increased error
+            # Only update target every few frames to simulate reaction time
+            delay = [15, 8, 3][self.difficulty]
+            if self.tick % delay == 0:
+                # Random error based on difficulty (Novice has more error)
+                error_range = [80, 50, 25][self.difficulty]
+                self.ai_error = random.randint(-error_range, error_range)
+                self.ai_target = self.balls[0].y - 75 + self.ai_error if self.balls else self.h//2 - 75
+            
+            if not hasattr(self, 'ai_target'): self.ai_target = self.h//2 - 75
+            
+            dist = self.ai_target - self.p2_y
+            if abs(dist) > ai:
+                self.p2_y += ai if dist > 0 else -ai
+            else:
+                self.p2_y = self.ai_target
         else:
             if keys[pygame.K_UP]:
-                self.p2_y -= 8
+                self.p2_y -= 10
             if keys[pygame.K_DOWN]:
-                self.p2_y += 8
-        self.p2_y = max(0, min(V_HEIGHT-100, self.p2_y))
+                self.p2_y += 10
+        self.p2_y = max(0, min(self.h-150, self.p2_y))
         if self.shake > 0:
             self.shake -= 1
         self.super_meter = min(100, self.super_meter + 0.1)
 
         for b in self.balls[:]:
             b.update(dm)
-            if b.y < b.radius or b.y > V_HEIGHT-b.radius:
+            if b.y < b.radius:
+                b.y = b.radius
                 b.vy *= -1
                 self.shake = 3
                 self.audio.play("wall")
-            p1_r, p2_r, b_r = pygame.Rect(30, self.p1_y, 14, 100), pygame.Rect(V_WIDTH-44, self.p2_y, 14, 100), pygame.Rect(b.x-12, b.y-12, 24, 24)
+            elif b.y > self.h-b.radius:
+                b.y = self.h-b.radius
+                b.vy *= -1
+                self.shake = 3
+                self.audio.play("wall")
+            
+            p1_r = pygame.Rect(40, self.p1_y, 20, 150)
+            p2_r = pygame.Rect(self.w-60, self.p2_y, 20, 150)
+            b_r = pygame.Rect(b.x-14, b.y-14, 28, 28)
+            
             if b_r.colliderect(p1_r) and b.vx < 0:
-                b.vx *= -1.1
-                b.x = 44
+                b.vx *= -1.06
+                b.x = p1_r.right + b.radius + 2
                 self.shake = 6
                 b.charged = False
                 self.audio.play("paddle")
             elif b_r.colliderect(p2_r) and b.vx > 0:
-                b.vx *= -1.1
-                b.x = V_WIDTH-44-24
+                b.vx *= -1.06
+                b.x = p2_r.left - b.radius - 2
                 self.shake = 6
                 self.audio.play("paddle")
             for br in self.bricks:
@@ -371,6 +418,9 @@ class Game:
                     self.score += 10
                     self.audio.play("brick")
                     if not b.charged:
+                        # Move ball out of brick based on velocity
+                        if b.vx > 0: b.x = br["rect"].left - b.radius
+                        else: b.x = br["rect"].right + b.radius
                         b.vx *= -1
                     if br["exp"]:
                         self.detonate(br["rect"].center)
@@ -389,7 +439,7 @@ class Game:
                             save_highscore(self.score)
                     else:
                         self.balls = [Ball()]
-            elif b.x > V_WIDTH:
+            elif b.x > self.w:
                 if self.game_mode == 0:
                     self.score += 100
                     b.reset()
@@ -431,18 +481,17 @@ class Game:
 
     def draw(self):
         t = THEMES[self.theme]
-        for y in range(V_HEIGHT):
-            f = y / V_HEIGHT
+        for y in range(self.h):
+            f = y / self.h
             c = [int(t["bg_top"][i] * (1-f) + t["bg_bot"][i] * f) for i in range(3)]
-            pygame.draw.line(self.game_surf, c, (0, y), (V_WIDTH, y))
+            pygame.draw.line(self.game_surf, c, (0, y), (self.w, y))
         for s in self.stars:
             s.draw(self.game_surf)
         for p in self.particles:
             p.draw(self.game_surf)
         
         mx, my = pygame.mouse.get_pos()
-        rw, rh = self.draw_rect.width, self.draw_rect.height
-        rel_m = ((mx - self.draw_rect.x) * (V_WIDTH / rw), (my - self.draw_rect.y) * (V_HEIGHT / rh))
+        rel_m = (mx, my) 
         
         if self.state == "PLAY":
             for br in self.bricks:
@@ -450,21 +499,21 @@ class Game:
                     pygame.draw.rect(self.game_surf, t["accent"] if br["exp"] else t["p2"], br["rect"], border_radius=6)
                     pygame.draw.rect(self.game_surf, WHITE, br["rect"], 2, border_radius=6)
             so = (random.randint(-self.shake, self.shake), random.randint(-self.shake, self.shake)) if self.shake > 0 else (0, 0)
-            pygame.draw.rect(self.game_surf, t["p1"], (30+so[0], self.p1_y+so[1], 16, 100), border_radius=10)
-            pygame.draw.rect(self.game_surf, t["p2"], (V_WIDTH-46+so[0], self.p2_y+so[1], 16, 100), border_radius=10)
+            pygame.draw.rect(self.game_surf, t["p1"], (40+so[0], self.p1_y+so[1], 20, 150), border_radius=10)
+            pygame.draw.rect(self.game_surf, t["p2"], (self.w-60+so[0], self.p2_y+so[1], 20, 150), border_radius=10)
             for b in self.balls:
                 b.draw(self.game_surf, self.theme)
-            self.draw_txt(self.game_surf, f"SCORE: {self.score}", self.font, WHITE, (100, 40))
-            self.draw_txt(self.game_surf, f"LIVES: {self.lives}", self.font, RED, (V_WIDTH-100, 40))
+            self.draw_txt(self.game_surf, f"SCORE: {self.score}", self.font, WHITE, (150, 50))
+            self.draw_txt(self.game_surf, f"LIVES: {self.lives}", self.font, RED, (self.w-150, 50))
         elif self.state == "MENU":
-            y_off = math.sin(self.tick * 0.04) * 15
+            y_off = math.sin(self.tick * 0.04) * 18
             for i in range(12):
                 alpha = 70 - i * 5
-                self.draw_txt(self.game_surf, "PIXEL PONG", self.font_big, (*t["glow"], alpha), (V_WIDTH//2, 130 + y_off))
-            self.draw_txt(self.game_surf, "PIXEL PONG", self.font_big, WHITE, (V_WIDTH//2, 130 + y_off))
+                self.draw_txt(self.game_surf, "PIXEL PONG", self.font_big, (*t["glow"], alpha), (self.w//2, 200 + y_off))
+            self.draw_txt(self.game_surf, "PIXEL PONG", self.font_big, WHITE, (self.w//2, 200 + y_off))
             if self.icon:
-                ic = pygame.transform.smoothscale(self.icon, (100, 100))
-                self.game_surf.blit(ic, (V_WIDTH//2-50, 185 + y_off))
+                ic = pygame.transform.smoothscale(self.icon, (130, 130))
+                self.game_surf.blit(ic, (self.w//2-65, 300 + y_off))
             self.draw_glass_btn(self.game_surf, self.btns["START"], "ENTER GAME", t["p1"], self.btns["START"].collidepoint(rel_m))
             self.draw_glass_btn(self.game_surf, self.btns["SETTINGS"], "GAME SETUP", t["p1"], self.btns["SETTINGS"].collidepoint(rel_m))
             gh_hover = self.btns["GITHUB"].collidepoint(rel_m)
@@ -479,24 +528,29 @@ class Game:
             pygame.draw.rect(self.game_surf, ex_c, self.btns["EXIT"], 2, border_radius=6)
             self.draw_txt(self.game_surf, "EXIT", self.font_small, ex_c, self.btns["EXIT"].center)
         elif self.state == "SETTINGS":
-            self.draw_txt(self.game_surf, "GAME SETUP", self.font_mid, WHITE, (V_WIDTH//2, 60))
-            opts = [("MODE", self.modes[self.game_mode]), ("DIFF", self.diffs[self.difficulty]), ("THEME", self.theme), ("CONTROLS", "ALL KEYS")]
+            self.draw_txt(self.game_surf, "GAME SETUP", self.font_mid, WHITE, (self.w//2, 80))
+            opts = [("MODE", self.modes[self.game_mode]), ("LEVEL", self.diffs[self.difficulty]), ("THEME", self.theme), ("CONTROLS", "ALL KEYS")]
             for i, (l, v) in enumerate(opts):
-                y = 135 + i * 75
-                hover = y-32 < rel_m[1] < y+32
-                self.draw_glass_btn(self.game_surf, pygame.Rect(60, y-32, 680, 64), f"{l} | {v}", t["p1"], hover)
-            back_r = pygame.Rect(V_WIDTH//2-110, 430, 220, 55)
+                y = 200 + i * 120
+                hover = y-45 < rel_m[1] < y+45
+                self.draw_glass_btn(self.game_surf, pygame.Rect(80, y-45, self.w-160, 90), f"{l} | {v}", t["p1"], hover)
+            back_r = pygame.Rect(self.w//2-160, 690, 320, 80)
             self.draw_glass_btn(self.game_surf, back_r, "BACK", t["p1"], back_r.collidepoint(rel_m))
         elif self.state == "OVER":
-            self.draw_txt(self.game_surf, "GAME OVER", self.font_big, RED, (V_WIDTH//2, 180))
-            self.draw_txt(self.game_surf, f"SCORE: {self.score}", self.font_mid, WHITE, (V_WIDTH//2, 300))
+            self.draw_txt(self.game_surf, "GAME OVER", self.font_big, RED, (self.w//2, 280))
+            self.draw_txt(self.game_surf, f"SCORE: {self.score}", self.font_mid, WHITE, (self.w//2, 450))
             self.draw_glass_btn(self.game_surf, self.btns["RESTART"], "RETRY", RED, self.btns["RESTART"].collidepoint(rel_m))
-
-
-        
+        elif self.state == "PAUSE":
+            # Draw game background but dim it
+            overlay = pygame.Surface((self.w, self.h), pygame.SRCALPHA)
+            overlay.fill((0, 0, 0, 180))
+            self.game_surf.blit(overlay, (0, 0))
+            self.draw_txt(self.game_surf, "PAUSED", self.font_big, WHITE, (self.w//2, 180))
+            self.draw_glass_btn(self.game_surf, self.btns["RESUME"], "RESUME", t["p1"], self.btns["RESUME"].collidepoint(rel_m))
+            self.draw_glass_btn(self.game_surf, self.btns["QUIT"], "QUIT MENU", RED, self.btns["QUIT"].collidepoint(rel_m))
+            
         self.screen.fill(BLACK)
-        scaled = pygame.transform.smoothscale(self.game_surf, (self.draw_rect.width, self.draw_rect.height))
-        self.screen.blit(scaled, (self.draw_rect.x, self.draw_rect.y))
+        self.screen.blit(self.game_surf, (0, 0))
         pygame.display.flip()
 
     def draw_txt(self, s, t, f, c, p):
