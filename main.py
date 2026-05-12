@@ -180,6 +180,7 @@ class Game:
         self.game_surf = pygame.Surface((V_WIDTH, V_HEIGHT))
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("orbitron,segoeui,arial", 32, bold=True)
+        self.font_small = pygame.font.SysFont("orbitron,segoeui,arial", 20, bold=True)
         self.font_big = pygame.font.SysFont("orbitron,segoeui,arial", 110, bold=True)
         self.font_mid = pygame.font.SysFont("orbitron,segoeui,arial", 64, bold=True)
         
@@ -198,7 +199,8 @@ class Game:
             "START": pygame.Rect(V_WIDTH//2-160, 260, 320, 70),
             "SETTINGS": pygame.Rect(V_WIDTH//2-160, 350, 320, 70),
             "RESTART": pygame.Rect(V_WIDTH//2-160, 380, 320, 70),
-            "GITHUB": pygame.Rect(V_WIDTH - 150, V_HEIGHT - 50, 130, 40)
+            "GITHUB": pygame.Rect(V_WIDTH - 110, V_HEIGHT - 45, 90, 30),
+            "EXIT": pygame.Rect(20, V_HEIGHT - 45, 90, 30)
         }
         self.tick = 0
         self.reset_game()
@@ -284,6 +286,8 @@ class Game:
                 elif self.btns["GITHUB"].collidepoint(rel_m):
                     webbrowser.open("https://github.com/Subhan-Haider")
                     self.audio.play("button")
+                elif self.btns["EXIT"].collidepoint(rel_m):
+                    return False
             elif self.state == "SETTINGS":
                 if rel_m[1] > 410:
                     self.state = "MENU"
@@ -465,9 +469,15 @@ class Game:
             self.draw_glass_btn(self.game_surf, self.btns["SETTINGS"], "GAME SETUP", t["p1"], self.btns["SETTINGS"].collidepoint(rel_m))
             gh_hover = self.btns["GITHUB"].collidepoint(rel_m)
             gh_c = t["p1"] if gh_hover else (150, 150, 170)
-            pygame.draw.rect(self.game_surf, (30, 30, 40), self.btns["GITHUB"], border_radius=8)
-            pygame.draw.rect(self.game_surf, gh_c, self.btns["GITHUB"], 2, border_radius=8)
-            self.draw_txt(self.game_surf, "GitHub", self.font, gh_c, self.btns["GITHUB"].center)
+            pygame.draw.rect(self.game_surf, (30, 30, 40), self.btns["GITHUB"], border_radius=6)
+            pygame.draw.rect(self.game_surf, gh_c, self.btns["GITHUB"], 2, border_radius=6)
+            self.draw_txt(self.game_surf, "GitHub", self.font_small, gh_c, self.btns["GITHUB"].center)
+            
+            ex_hover = self.btns["EXIT"].collidepoint(rel_m)
+            ex_c = RED if ex_hover else (150, 150, 170)
+            pygame.draw.rect(self.game_surf, (30, 30, 40), self.btns["EXIT"], border_radius=6)
+            pygame.draw.rect(self.game_surf, ex_c, self.btns["EXIT"], 2, border_radius=6)
+            self.draw_txt(self.game_surf, "EXIT", self.font_small, ex_c, self.btns["EXIT"].center)
         elif self.state == "SETTINGS":
             self.draw_txt(self.game_surf, "GAME SETUP", self.font_mid, WHITE, (V_WIDTH//2, 60))
             opts = [("MODE", self.modes[self.game_mode]), ("DIFF", self.diffs[self.difficulty]), ("THEME", self.theme), ("CONTROLS", "ALL KEYS")]
