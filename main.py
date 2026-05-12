@@ -11,6 +11,16 @@ import os
 import array
 import time
 import webbrowser
+import sys
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
 
 # --- Config ---
 V_WIDTH, V_HEIGHT = 1280, 800
@@ -58,18 +68,20 @@ class AudioEngine:
     def _load_custom_assets(self):
         mapping = {"game over.mp3": "game_over", "ball hit.mp3": "paddle", "menu button.mp3": "button", "start game.mp3": "start", "game close.mp3": "close"}
         for file, key in mapping.items():
-            if os.path.exists(file):
+            path = resource_path(file)
+            if os.path.exists(path):
                 try:
-                    self.sounds[key] = pygame.mixer.Sound(file)
+                    self.sounds[key] = pygame.mixer.Sound(path)
                 except:
                     pass
 
     def start_music(self):
         if self.music_playing:
             return
-        if os.path.exists("background.mp3"):
+        bg_path = resource_path("background.mp3")
+        if os.path.exists(bg_path):
             try:
-                pygame.mixer.music.load("background.mp3")
+                pygame.mixer.music.load(bg_path)
                 pygame.mixer.music.play(-1)
                 self.music_playing = True
                 return
@@ -173,9 +185,10 @@ class Game:
         self.screen = pygame.display.set_mode((V_WIDTH, V_HEIGHT), pygame.RESIZABLE)
         pygame.display.set_caption("PIXEL PONG")
         self.icon = None
-        if os.path.exists("icon.png"):
+        icon_path = resource_path("icon.png")
+        if os.path.exists(icon_path):
             try:
-                self.icon = pygame.image.load("icon.png")
+                self.icon = pygame.image.load(icon_path)
                 pygame.display.set_icon(self.icon)
             except:
                 pass
