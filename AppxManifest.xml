@@ -5,22 +5,22 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities">
 
   <Identity
-    Name="SubhanHaider.PixelPong"
-    Publisher="CN=SubhanHaider"
+    Name="SubhanStore.PixelPongs"
+    Publisher="CN=033AC539-6559-4258-97EB-6268BC2B6B91"
     Version="1.0.0.0" />
 
   <Properties>
-    <DisplayName>Pixel Pong</DisplayName>
-    <PublisherDisplayName>Subhan Haider</PublisherDisplayName>
+    <DisplayName>Pixel Pongs</DisplayName>
+    <PublisherDisplayName>S. Tech Studio</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
 
   <Dependencies>
-    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.0.0" MaxVersionTested="10.0.19041.0" />
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
   </Dependencies>
 
   <Resources>
-    <Resource Language="x-generate" />
+    <Resource Language="en-us" />
   </Resources>
 
   <Applications>
@@ -28,7 +28,7 @@
       Executable="PixelPong.exe"
       EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="Pixel Pong"
+        DisplayName="Pixel Pongs"
         Description="A premium arcade ping pong experience."
         BackgroundColor="#050514"
         Square150x150Logo="Assets\Square150x150Logo.png"

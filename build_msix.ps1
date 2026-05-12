@@ -35,6 +35,4 @@ if ($generatedIcon) {
 
 Write-Host "`n--- ✅ Folders Prepared ---" -ForegroundColor Green
 Write-Host "To finish building the MSIX, run the following command in your Windows SDK terminal:" -ForegroundColor Yellow
-Write-Host "MakeAppx pack /d `"$msixDir`" /p `"PixelPong.msix`"" -ForegroundColor White
-Write-Host "`nThen sign it with:" -ForegroundColor Yellow
 Write-Host "SignTool sign /fd SHA256 /a /f YourCertificate.pfx /p YourPassword PixelPong.msix" -ForegroundColor White
